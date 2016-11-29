@@ -401,11 +401,43 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
                     return;
                 }
             }
-            
-            [self.response setObject:videoDestinationURL.absoluteString forKey:@"uri"];
-            if (videoRefURL.absoluteString) {
-                [self.response setObject:videoRefURL.absoluteString forKey:@"origURL"];
+
+            if ([[self.options objectForKey:@"formatToMp4"] boolValue] == YES) {
+                NSURL *parentURL = [videoDestinationURL URLByDeletingLastPathComponent];
+                NSString *path = [parentURL.path stringByAppendingString:[[NSUUID UUID] UUIDString]];
+                path = [path stringByAppendingString:@".mp4"];
+                NSURL *outputURL = [NSURL fileURLWithPath:path];
+                [self convertVideoToLowQuailtyWithInputURL:videoDestinationURL outputURL:outputURL handler:^(AVAssetExportSession *exportSession) {
+                    if (exportSession.status == AVAssetExportSessionStatusCompleted) {
+                        NSLog(@"%@", outputURL.absoluteString);
+                        [self.response setObject:outputURL.absoluteString forKey:@"uri"];
+                    } 
+                    else {
+                        [self.response setObject:videoDestinationURL.absoluteString forKey:@"uri"];
+                        if (videoRefURL.absoluteString) {
+                            [self.response setObject:videoRefURL.absoluteString forKey:@"origURL"];
+                        }
+                    }
+                }];
+
+                ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
+                [library writeVideoAtPathToSavedPhotosAlbum:outputURL completionBlock:^(NSURL *assetURL, NSError *error) {
+                    if (error) {
+                        self.callback(@[@{@"error": error.localizedFailureReason}]);
+                        return;
+                    } else {
+                        NSLog(@"Save video succeed.");
+                        self.callback(@[self.response]);
+                    }
+                }];
             }
+            else {
+                [self.response setObject:videoDestinationURL.absoluteString forKey:@"uri"];
+                if (videoRefURL.absoluteString) {
+                    [self.response setObject:videoRefURL.absoluteString forKey:@"origURL"];
+                }
+            }
+
             
             NSDictionary *storageOptions = [self.options objectForKey:@"storageOptions"];
             if (storageOptions && [[storageOptions objectForKey:@"cameraRoll"] boolValue] == YES && self.picker.sourceType == UIImagePickerControllerSourceTypeCamera) {
@@ -444,9 +476,28 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         }
     };
     
+    NSLog(@"DONE");
+    
     dispatch_async(dispatch_get_main_queue(), ^{
         [picker dismissViewControllerAnimated:YES completion:dismissCompletionBlock];
     });
+}
+
+- 
+
+- (void)convertVideoToLowQuailtyWithInputURL:(NSURL*)inputURL
+                                   outputURL:(NSURL*)outputURL
+                                     handler:(void (^)(AVAssetExportSession*))handler {
+    [[NSFileManager defaultManager] removeItemAtURL:outputURL error:nil];
+    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:inputURL options:nil];
+    AVAssetExportSession *exportSession = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetMediumQuality];
+    exportSession.outputURL = outputURL;
+    exportSession.outputFileType = AVFileTypeMPEG4;
+    exportSession.shouldOptimizeForNetworkUse = YES;
+    [exportSession exportAsynchronouslyWithCompletionHandler:^(void)
+     {
+         handler(exportSession);
+     }];
 }
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker
