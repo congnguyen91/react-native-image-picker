@@ -409,24 +409,14 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
                 NSURL *outputURL = [NSURL fileURLWithPath:path];
                 [self convertVideoToLowQuailtyWithInputURL:videoDestinationURL outputURL:outputURL handler:^(AVAssetExportSession *exportSession) {
                     if (exportSession.status == AVAssetExportSessionStatusCompleted) {
-                        NSLog(@"%@", outputURL.absoluteString);
                         [self.response setObject:outputURL.absoluteString forKey:@"uri"];
+                        self.callback(@[self.response]);
                     } 
                     else {
                         [self.response setObject:videoDestinationURL.absoluteString forKey:@"uri"];
                         if (videoRefURL.absoluteString) {
                             [self.response setObject:videoRefURL.absoluteString forKey:@"origURL"];
                         }
-                    }
-                }];
-
-                ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
-                [library writeVideoAtPathToSavedPhotosAlbum:outputURL completionBlock:^(NSURL *assetURL, NSError *error) {
-                    if (error) {
-                        self.callback(@[@{@"error": error.localizedFailureReason}]);
-                        return;
-                    } else {
-                        NSLog(@"Save video succeed.");
                         self.callback(@[self.response]);
                     }
                 }];
@@ -468,22 +458,22 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
                 [[storageOptions objectForKey:@"cameraRoll"] boolValue] == NO ||
                 self.picker.sourceType != UIImagePickerControllerSourceTypeCamera)
             {
-                self.callback(@[self.response]);
+                if (![[self.options objectForKey:@"formatToMp4"] boolValue]) {
+                    self.callback(@[self.response]);
+                }
             }
         }
         else {
-            self.callback(@[self.response]);
+            if (![[self.options objectForKey:@"formatToMp4"] boolValue]) {
+                self.callback(@[self.response]);
+            }
         }
     };
-    
-    NSLog(@"DONE");
     
     dispatch_async(dispatch_get_main_queue(), ^{
         [picker dismissViewControllerAnimated:YES completion:dismissCompletionBlock];
     });
 }
-
-- 
 
 - (void)convertVideoToLowQuailtyWithInputURL:(NSURL*)inputURL
                                    outputURL:(NSURL*)outputURL
