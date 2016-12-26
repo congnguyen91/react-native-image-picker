@@ -29,7 +29,7 @@ This library started as a basic bridge of the native iOS image picker, and I wan
 **React Native < 0.29**
 `$rnpm link`
 
-Note: On iOS, you'll still need to perform step 4 of the manual instructions below.
+IMPORTANT NOTE: You'll still need to perform step 4 for iOS and step 3 for Android of the manual instructions below.
 
 ### Manual Installation
 
@@ -38,59 +38,45 @@ Note: On iOS, you'll still need to perform step 4 of the manual instructions bel
 1. In the XCode's "Project navigator", right click on your project's Libraries folder ➜ `Add Files to <...>`
 2. Go to `node_modules` ➜ `react-native-image-picker` ➜ `ios` ➜ select `RNImagePicker.xcodeproj`
 3. Add `RNImagePicker.a` to `Build Phases -> Link Binary With Libraries`
-4. For iOS 10+, Add the `NSPhotoLibraryUsageDescription` and `NSCameraUsageDescription` keys to your `Info.plist` with strings describing why your app needs these permissions
+4. For iOS 10+, Add the `NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription`, and `NSMicrophoneUsageDescription` (if allowing video) keys to your `Info.plist` with strings describing why your app needs these permissions
 5. Compile and have fun
 
 #### Android
-```gradle
-// file: android/settings.gradle
-...
+1. Add the following lines to `android/settings.gradle`:
 
-include ':react-native-image-picker'
-project(':react-native-image-picker').projectDir = new File(settingsDir, '../node_modules/react-native-image-picker/android')
-```
-```gradle
-// file: android/app/build.gradle
-...
+    ```gradle
+    include ':react-native-image-picker'
+    project(':react-native-image-picker').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-image-picker/android')
+    ```
+2. Add the compile line to the dependencies in `android/app/build.gradle`:
 
-dependencies {
-    ...
-    compile project(':react-native-image-picker')
-}
-```
-```xml
-<!-- file: android/app/src/main/AndroidManifest.xml -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.myApp">
+    ```gradle
+    dependencies {
+        compile project(':react-native-image-picker')
+    }
+    ```
+3. Add the required permissions in `AndroidManifest.xml`:
 
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- add following permissions -->
+    ```xml
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-feature android:name="android.hardware.camera" android:required="false"/>
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
-    <!-- -->
-    ...
-```
-```java
-// file: android/app/src/main/java/com/<...>/MainApplication.java
-...
+    ```
+4. Add the import and link the package in `MainApplication.java`:
 
-import com.imagepicker.ImagePickerPackage; // <-- add this import
-
-public class MainApplication extends Application implements ReactApplication {
-    @Override
-    protected List<ReactPackage> getPackages() {
-        return Arrays.<ReactPackage>asList(
-            new MainReactPackage(),
-            new ImagePickerPackage() // <-- add this line
-        );
+    ```java
+    import com.imagepicker.ImagePickerPackage; // <-- add this import
+    
+    public class MainApplication extends Application implements ReactApplication {
+        @Override
+        protected List<ReactPackage> getPackages() {
+            return Arrays.<ReactPackage>asList(
+                new MainReactPackage(),
+                new ImagePickerPackage() // <-- add this line
+            );
+        }
     }
-...
-}
-
 ```
+
 ## Usage
 
 ```javascript
@@ -190,7 +176,7 @@ storageOptions | OK | OK | If this key is provided, the image will get saved in 
 storageOptions.skipBackup | OK | - | If true, the photo will NOT be backed up to iCloud
 storageOptions.path | OK | - | If set, will save image at /Documents/[path] rather than the root
 storageOptions.cameraRoll | OK | - | If true, the cropped photo will be saved to the iOS Camera Roll.
-storageOptions.waitUntilSaved | OK | - | If true, will delay the response callback until after the photo/video was saved to the Camera Roll.
+storageOptions.waitUntilSaved | OK | - | If true, will delay the response callback until after the photo/video was saved to the Camera Roll. If the photo or video was just taken, then the file name and timestamp fields are only provided in the response object when this is true.
 
 ### The Response Object
 
@@ -206,9 +192,9 @@ width | OK | OK | Image dimensions
 height | OK | OK | Image dimensions
 fileSize | OK | OK | The file size (photos only)
 type | - | OK | The file type (photos only)
-fileName | - | OK | The file name (photos only)
+fileName | OK (photos and videos) | OK (photos) | The file name
 path | - | OK | The file path
-latitude | - | OK | Latitude metadata, if available
-longitude | - | OK | Longitude metadata, if available
-timestamp | - | OK | Timestamp metadata, if available, in ISO8601 UTC format
+latitude | OK | OK | Latitude metadata, if available
+longitude | OK | OK | Longitude metadata, if available
+timestamp | OK | OK | Timestamp metadata, if available, in ISO8601 UTC format
 originalRotation | - | OK | Rotation degrees (photos only) *See [#109](/../../issues/199)*
