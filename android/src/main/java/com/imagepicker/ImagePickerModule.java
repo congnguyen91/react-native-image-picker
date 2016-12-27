@@ -23,6 +23,7 @@ import android.widget.ArrayAdapter;
 import android.webkit.MimeTypeMap;
 import android.content.pm.PackageManager;
 import android.media.MediaScannerConnection;
+import android.media.MediaMetadataRetriever;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
@@ -325,8 +326,17 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
         uri = data.getData();
         break;
       case REQUEST_LAUNCH_VIDEO_LIBRARY:
+        String videoPath = getRealPathFromURI(data.getData());
         response.putString("uri", data.getData().toString());
-        response.putString("path", getRealPathFromURI(data.getData()));
+        response.putString("path", videoPath);
+            
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(videoPath); // Enter Full File Path Here
+        String time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+        long videoDuration = Long.parseLong(time); // You will get time in milliseconds
+        double  durationInSecond = videoDuration / 1000.0;
+        response.putDouble("duration", durationInSecond);
+            
         mCallback.invoke(response);
         mCallback = null;
         return;
