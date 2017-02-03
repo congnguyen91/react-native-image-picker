@@ -1,5 +1,5 @@
 #import "ImagePickerManager.h"
-#import "RCTConvert.h"
+#import <React/RCTConvert.h>
 #import <AssetsLibrary/AssetsLibrary.h>
 #import <AVFoundation/AVFoundation.h>
 #import <Photos/Photos.h>
